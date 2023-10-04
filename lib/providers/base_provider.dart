@@ -34,43 +34,27 @@ class BaseProvider with ChangeNotifier {
     debugPrint('Calling --> ' + path);
     final url = BASE_URL + path;
 
-    if (headers['token'] == null) {
-      _headers.remove('token');
-    }
-
-    if (headers['Token'] == null) {
-      _headers.remove('Token');
-    }
-
-    if (headers['lang'] == null) {
-      _headers['lang'] = "";
-    }
-
-    if (headers['languageId'] == null) {
-      _headers['languageId'] = '1';
-    }
-
     headers.forEach((k, v) {
       if (Validators.isNotEmptyOrNull(k) && Validators.isNotEmptyOrNull(v)) {
         _headers[k] = v;
       }
     });
 
-    Dio dio = Dio();
+    Dio dio = Dio(BaseOptions(
+      validateStatus: (status) {
+        if (status == 401) {
+          debugPrint('Unauthorized');
+          MainUtil.showSnack(context, 'Unauthorized', SnackType.ERROR);
+          return false;
+        }
+        return true;
+      },
+    ));
     Response response;
 
     final body = jsonEncode(parameters);
 
     try {
-      /*
-      (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
-          (HttpClient client) {
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
-        return client;
-      };
-      */
-
       response = await dio.post(
         url,
         data: body,
@@ -79,11 +63,13 @@ class BaseProvider with ChangeNotifier {
         ),
       );
 
-      // print('Response: ${response}');
+      if (response.statusCode == 400) {
+        MainUtil.showSnack(context, response.data["error"].toString(), SnackType.ERROR);
+      }
+      if (response.statusCode == 200) {
+        return response.data;
+      }
       debugPrint('Completed --> ' + path);
-      BaseResponse baseResponse = parseResponse(response, isDataResponse);
-
-      return baseResponse;
     } catch (error) {
       debugPrint('Error: $error');
 
@@ -93,30 +79,6 @@ class BaseProvider with ChangeNotifier {
 
         BaseResponse errResp = parseErrorResponse(errorResponse);
 
-        if (errResp.errorCode == 1155 || errResp.errorCode == 2002 || errResp.errorCode == 2003 || errResp.errorCode == 2004) {
-          debugPrint('Completed with error: ${errResp.errorCode} --> ' + path);
-          return BaseResponse(
-            errorCode: errResp.errorCode,
-            message: errResp.message,
-            data: errResp.data,
-          );
-        }
-
-        if (!isLogin &&
-            errResp.message != null &&
-            (errResp.message!.contains('Oturum') ||
-                errResp.message!
-                    .startsWith('Kullanıcınız uzun süre hareketsiz olduğu için oturum süreniz sonlandırılmıştır. Lütfen yeniden oturum açınız.'))) {
-          Future.delayed(
-            const Duration(seconds: 2),
-            () {
-              MainUtil.showSnack(context, errResp.message ?? '', SnackType.ERROR);
-            },
-          );
-
-          return null;
-        }
-
         throw FlutterError(errResp.message ?? '$error');
       } catch (e) {
         debugPrint('$e');
@@ -124,37 +86,6 @@ class BaseProvider with ChangeNotifier {
         throw FlutterError('$e');
       }
     }
-  }
-
-  parseResponse(Response response, bool isDataResponse) {
-    Map rsp = response.data;
-
-    int errorCode = rsp[ERROR_CODE] ?? 0;
-    String? message = rsp[MESSAGE];
-    final messages = rsp[MESSAGES];
-    final data = isDataResponse ? rsp : rsp[DATA];
-
-    String? token;
-
-    try {
-      if (rsp.containsKey('Token') && rsp['Token'] != null) {
-        token = rsp['Token'];
-      } else {
-        token = response.headers.value('Token');
-      }
-    } catch (e) {
-      debugPrint('Error while getting token --> $e');
-    }
-
-    var resp = BaseResponse(
-      errorCode: errorCode,
-      message: message,
-      messages: messages,
-      data: data,
-      token: token,
-    );
-
-    return resp;
   }
 
   parseListResponse(Response response) {
@@ -199,24 +130,6 @@ class BaseProvider with ChangeNotifier {
     debugPrint('Calling --> ' + fullPath);
     final url = BASE_URL + fullPath;
 
-    headers.forEach((k, v) => _headers[k] = v);
-
-    if (headers['token'] == null) {
-      _headers.remove('token');
-    }
-
-    if (headers['Token'] == null) {
-      _headers.remove('Token');
-    }
-
-    if (headers['lang'] == null) {
-      _headers['lang'] = '';
-    }
-
-    if (headers['languageId'] == null) {
-      _headers['languageId'] = '1';
-    }
-
     Dio dio = Dio();
     Response response;
 
@@ -229,9 +142,13 @@ class BaseProvider with ChangeNotifier {
       );
 
       debugPrint('Completed --> ' + fullPath);
-      BaseResponse baseResponse = isDataResponse ? parseListResponse(response) : parseResponse(response, isDataResponse);
-
-      return baseResponse;
+      if (response.statusCode == 400) {
+        MainUtil.showSnack(context, response.data["error"].toString(), SnackType.ERROR);
+      }
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return response.data;
     } catch (error) {
       debugPrint('Error: $error');
 
@@ -240,30 +157,6 @@ class BaseProvider with ChangeNotifier {
         Response errorResponse = dioError.response!;
 
         BaseResponse errResp = parseErrorResponse(errorResponse);
-
-        if (errResp.errorCode == 1155 || errResp.errorCode == 2002 || errResp.errorCode == 2003 || errResp.errorCode == 2004) {
-          debugPrint('Completed with error: ${errResp.errorCode} --> ' + fullPath);
-          return BaseResponse(
-            errorCode: errResp.errorCode,
-            message: errResp.message,
-            data: errResp.data,
-          );
-        }
-
-        if (!isLogin &&
-            errResp.message != null &&
-            (errResp.message!.contains('Oturum') ||
-                errResp.message!
-                    .startsWith('Kullanıcınız uzun süre hareketsiz olduğu için oturum süreniz sonlandırılmıştır. Lütfen yeniden oturum açınız.'))) {
-          Future.delayed(
-            const Duration(seconds: 2),
-            () {
-              MainUtil.showSnack(context, errResp.message ?? '', SnackType.ERROR);
-            },
-          );
-
-          return null;
-        }
 
         throw FlutterError(errResp.message ?? '$error');
       } catch (e) {

@@ -48,4 +48,31 @@ class MainUtil {
     }
     return color;
   }
+
+  static void navigateTo(
+    BuildContext context,
+    Widget screen,
+    bool willPop, {
+    VoidCallback? callback,
+  }) async {
+    final _navigator = Navigator.of(context);
+
+    if (willPop) {
+      _navigator.pop();
+    }
+
+    await _navigator.push(
+      MaterialPageRoute(
+        builder: (context) => screen,
+      ),
+    );
+
+    if (callback != null) {
+      callback();
+    }
+  }
+
+  static void pop(BuildContext context) {
+    Navigator.of(context).pop();
+  }
 }
