@@ -21,7 +21,7 @@ import 'utils/softpos_alertbox/softpos_alertbox_functions.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const Locale english = Locale('en', 'US');
 const Locale turkish = Locale('tr', 'TR');
-const platform = MethodChannel('com.hstpos.app/channel');
+const platform = MethodChannel('com.hstsoftpos.app/channel');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -180,7 +180,7 @@ Future<void> _initializePlatform() async {
 
 Future<void> printSlip(BuildContext context, String id) async {
   try {
-    int? printerStatus = await const MethodChannel('com.hstpos.app/channel').invokeMethod<int?>('getPrinterStatus');
+    int? printerStatus = await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod<int?>('getPrinterStatus');
     if (printerStatus == 240) {
       await QuickAlert.show(
         title: "Hata",
@@ -199,7 +199,7 @@ Future<void> printSlip(BuildContext context, String id) async {
     }
 
     Map<String, dynamic> paymentJson = payment.toJson();
-    await const MethodChannel('com.hstpos.app/channel').invokeMethod('printSlip', paymentJson);
+    await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod('printSlip', paymentJson);
   } catch (e) {
     log(e.toString());
     MainUtil.showSnack(context, 'Bir hata oluştu. Lütfen tekrar deneyin.', SnackType.ERROR);
@@ -208,13 +208,16 @@ Future<void> printSlip(BuildContext context, String id) async {
 
 Future<void> _showAlertDialog(BuildContext context, CallbackDataResponse? response, {required String id}) async {
   if ((response?.isCompleted ?? false) && (response?.status ?? false)) {
-    await printSlip(context, id);
-    await QuickAlert.show(
-      context: context,
-      type: QuickAlertType.success,
-      text: response?.errorDesc ?? "-",
-      confirmBtnText: "Tamam",
-    );
+    await Future.wait([
+      printSlip(context, id),
+      QuickAlert.show(
+        title: "Başarılı",
+        context: context,
+        type: QuickAlertType.success,
+        text: response?.errorDesc ?? "-",
+        confirmBtnText: "Tamam",
+      )
+    ]);
   } else {
     await QuickAlert.show(
       context: context,

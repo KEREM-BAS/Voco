@@ -39,6 +39,7 @@ class Routes {
   static const API_MERCHANT_GET_DOCUMENT = 'Merchant/Get-Merchant-Document?merchantId=';
   static const API_MERCHANT_GET_CITY = 'Merchant/Get-City';
   static const API_MERCHANT_GET_DISTRICT = 'Merchant/Get-District?cityNo=';
+  static const API_GET_SOFTPOS_RATES = 'Merchant/Taxi-Pos-Rates?merchantId=';
 
   /// CARDSNOTPASSED
   static const API_GET_CARDS_NOT_PASSED_BY_ID = 'CardsNotPassed/Get-Card-Not-Passed-By-Id?id=';

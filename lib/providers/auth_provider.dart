@@ -15,6 +15,7 @@ import '../models/requests/sale_softpos_request.dart';
 import '../models/requests/transaction_report_request.dart';
 import '../models/responses/disabled_cards_response.dart';
 import '../models/responses/sale_transaction_response.dart';
+import '../models/softpos_rates.dart';
 import '../models/terminal.dart';
 import '../models/token.dart';
 import '../models/user.dart';
@@ -475,6 +476,29 @@ class AuthProvider extends BaseProvider {
       debugPrint('Error occurred on ReportProvider.getTransactionById() => $e');
       // MainUtil.showSnack(context, '$e', SnackType.ERROR);
     }
+    return null;
+  }
+
+  Future<SoftposRates?> getSoftposRates(BuildContext context) async {
+    try {
+      BaseResponse? response = await post(
+        context,
+        Routes.API_GET_SOFTPOS_RATES + Session.instance.merchant!.merchantId.toString(),
+        {},
+        {},
+        false,
+      );
+
+      if (response == null || response.errorCode > 0) {
+        return null;
+      }
+
+      return SoftposRates.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('Error occurred on AuthProvider.getSoftposRates() => $e');
+      MainUtil.showSnack(context, '$e', SnackType.ERROR);
+    }
+
     return null;
   }
 }

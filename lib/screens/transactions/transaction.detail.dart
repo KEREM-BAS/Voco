@@ -19,62 +19,87 @@ class TransactionDetailModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        margin: const EdgeInsets.all(16.0),
-        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(20.0),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 5),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.black54),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Expanded(
+                  child: Text(
+                    'İşlem Detayları',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'İşlem Detayları',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const Divider(),
+            const Divider(height: 20, thickness: 1.5),
             _detailRow('İşlem Tipi', _getTransactionType(transaction.transactionType)),
             _detailRow('Firma Adı', transaction.companyName ?? '-'),
             _detailRow('İşlem Durumu', _getTransactionStatus(transaction.transactionStatus)),
             _detailRow('İşlem Tarihi', transaction.createDate != null ? DateFormat('dd.MM.yyyy').format(transaction.createDate!) : '-'),
             _detailRow('Tutar', '${transaction.amount.toStringAsFixed(2)} ₺', isAmount: true),
-            ElevatedButton(
-              onPressed: () async => await printSlip(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                backgroundColor: Colors.green.shade700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () => printSlip(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    backgroundColor: Colors.blueAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Fiş Tekrarı',
+                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Fiş Tekrarı',
-                style: TextStyle(color: Colors.white),
-              ),
+                if (transaction.transactionStatus == 2)
+                  ElevatedButton(
+                    onPressed: () => _showCancelRefundOptions(context),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      backgroundColor: Colors.redAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'İptal / İade',
+                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -88,20 +113,26 @@ class TransactionDetailModal extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black54,
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isAmount ? Colors.green.shade700 : Colors.black,
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isAmount ? Colors.blueAccent : Colors.black87,
+              ),
             ),
           ),
         ],
@@ -111,7 +142,7 @@ class TransactionDetailModal extends StatelessWidget {
 
   Future<void> printSlip(BuildContext context) async {
     try {
-      int? printerStatus = await const MethodChannel('com.hstpos.app/channel').invokeMethod<int?>('getPrinterStatus');
+      int? printerStatus = await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod<int?>('getPrinterStatus');
       if (printerStatus == 240) {
         await QuickAlert.show(
           title: "Hata",
@@ -131,11 +162,16 @@ class TransactionDetailModal extends StatelessWidget {
       }
 
       Map<String, dynamic> paymentJson = payment.toJson();
-      await const MethodChannel('com.hstpos.app/channel').invokeMethod('printSlip', paymentJson);
+      await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod('printSlip', paymentJson);
     } catch (e) {
       log(e.toString());
       MainUtil.showSnack(context, 'Bir hata oluştu. Lütfen tekrar deneyin.', SnackType.ERROR);
     }
+  }
+
+  void _showCancelRefundOptions(BuildContext context) {
+    // Show cancel/refund options logic here
+    // Example: QuickAlert.show or a custom modal
   }
 
   String _getTransactionType(int type) {

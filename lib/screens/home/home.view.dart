@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/refresh_service.dart';
 import '../../utils/session.dart';
 import 'components/home.appbar.dart';
 import 'components/home.buttons.dart';
@@ -20,7 +21,7 @@ class _HomeViewState extends State<HomeView> {
     // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () {
-        return homeLogoutDialog(context);
+        return onBackPressed(context);
       },
       child: SafeArea(
         top: true,
@@ -28,12 +29,7 @@ class _HomeViewState extends State<HomeView> {
         child: Scaffold(
           body: RefreshIndicator(
             onRefresh: () async {
-              // await refreshPage();
-              // try {
-              //   await const MethodChannel('com.hstpos.app/channel').invokeMethod('printSlip');
-              // } catch (e) {
-              //   log(e.toString());
-              // }
+              await RefreshService().refreshUser(context, showProgress: false);
             },
             child: Stack(
               children: [

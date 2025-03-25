@@ -30,6 +30,8 @@ class _CalculatorViewState extends State<CalculatorView> {
 
   double serviceFee = 0.0;
 
+  double fee = 0.00;
+
   double total = 0.0;
 
   double amountFontSize = 60.0;
@@ -55,7 +57,7 @@ class _CalculatorViewState extends State<CalculatorView> {
     return NumberFormat('#,##0.00', 'tr_TR').format(total);
   }
 
-  // Handle keyboard tap (you would typically move this logic outside)
+  // Handle keyboard tap
   void onKeyboardTap(String value) {
     String amountStr = amount.toStringAsFixed(2);
 
@@ -134,9 +136,17 @@ class _CalculatorViewState extends State<CalculatorView> {
     }
   }
 
-  // Calculate service fee (e.g., 5% of amount)
+  // Calculate service fee based on specified logic
   double calculateServiceFee(double amount) {
-    return amount * 0.05;
+    if (Session.instance.softposRates == null && Session.instance.softposRates?.softRate1 == 0.0) {
+      return 0.0;
+    }
+    final rates = Session.instance.softposRates!;
+    if (amount <= rates.paymentRange1) {
+      return amount * (rates.softRate1 / 100);
+    } else {
+      return amount * (rates.softRate2 / 100);
+    }
   }
 
   // Calculate total
@@ -157,7 +167,7 @@ class _CalculatorViewState extends State<CalculatorView> {
     }
   }
 
-  // Start soft POS payment (dummy implementation, replace with actual API calls)
+  // Start soft POS payment
   Future<void> startSoftPosPayment() async {
     ProgressDialog dialog = ProgressDialog(context);
     var uuid = const Uuid();
@@ -184,14 +194,6 @@ class _CalculatorViewState extends State<CalculatorView> {
     SaleTransactionResponse? result = await Provider.of<AuthProvider>(context, listen: false).saleSoftpos(context, request);
     await dialog.hide();
     if (result != null) {
-      // if (result.hasError) {
-      //   MainUtil.showSnack(
-      //     context,
-      //     'Beklenmeyen bir hata oluştu, lütfen daha sonra tekrar deneyiniz!',
-      //     SnackType.ERROR,
-      //   );
-      //   return;
-      // }
       if (result.status == 'FAIL' || result.status == 'ERROR' || (result.paymentData == null && result.returnUrl == null)) {
         MainUtil.showSnack(
           context,
@@ -209,9 +211,7 @@ class _CalculatorViewState extends State<CalculatorView> {
         Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const HomeView()), (Route<dynamic> route) => false);
       }
     } else {
-      // setState(() {
-      //   _buttonDisabled = false;
-      // });
+      // Handle error
     }
   }
 
@@ -230,54 +230,71 @@ class _CalculatorViewState extends State<CalculatorView> {
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 5),
-              child: Image(
-                image: AssetImage('assets/images/hst-icon.png'),
-                height: 50,
-              ),
-            ),
-            CalculatorAmountCard(
-              amount: amount,
-              serviceFee: calculateServiceFee(amount),
-              total: calculateTotal(amount, serviceFee),
-            ),
-            NumericKeyboardHst(
-              height: screenHeight * 0.4,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              onKeyboardTap: (value) {
-                setState(() {
-                  onKeyboardTap(value);
-                });
-              },
-              textColor: Colors.white,
-              buttonBgColor: const Color.fromARGB(255, 104, 147, 148),
-              rightButtonFn: () {
-                setState(() {
-                  onBackspaceTap();
-                });
-              },
-              rightIcon: const Icon(
-                Icons.backspace,
-                color: Color.fromARGB(255, 247, 220, 1),
-                size: 40,
-              ),
-              leftButtonFn: () {
-                setState(() {
-                  onDecimalToggle();
-                });
-              },
-              leftIcon: Text(
-                ',',
-                style: TextStyle(
-                  fontSize: getResponsiveFontSize(30),
-                  fontWeight: FontWeight.bold,
-                  color: decimalFlag ? Colors.grey : Color.fromARGB(255, 247, 220, 1),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 5),
+                  child: Image(
+                    image: AssetImage('assets/images/hst-icon.png'),
+                    height: 50,
+                  ),
                 ),
-              ),
+                SizedBox(height: (fee != 0.0) ? 0 : 20),
+                CalculatorAmountCard(
+                  amount: amount,
+                  serviceFee: calculateServiceFee(amount),
+                  total: calculateTotal(amount, serviceFee),
+                  fee: fee,
+                ),
+              ],
             ),
-            CalculatorButtonRow(amount: amount, onCancel: () => Navigator.of(context).pop(), onProceed: () => startSoftPosPayment()),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                NumericKeyboardHst(
+                  height: screenHeight * 0.4,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  onKeyboardTap: (value) {
+                    setState(() {
+                      onKeyboardTap(value);
+                    });
+                  },
+                  textColor: Colors.white,
+                  buttonBgColor: const Color.fromARGB(255, 104, 147, 148),
+                  rightButtonFn: () {
+                    setState(() {
+                      onBackspaceTap();
+                    });
+                  },
+                  rightIcon: const Icon(
+                    Icons.backspace,
+                    color: Color.fromARGB(255, 247, 220, 1),
+                    size: 40,
+                  ),
+                  leftButtonFn: () {
+                    setState(() {
+                      onDecimalToggle();
+                    });
+                  },
+                  leftIcon: Text(
+                    ',',
+                    style: TextStyle(
+                      fontSize: getResponsiveFontSize(30),
+                      fontWeight: FontWeight.bold,
+                      color: decimalFlag ? Colors.grey : const Color.fromARGB(255, 247, 220, 1),
+                    ),
+                  ),
+                ),
+                CalculatorButtonRow(
+                  amount: amount,
+                  onCancel: () => Navigator.of(context).pop(),
+                  onProceed: () => startSoftPosPayment(),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -367,12 +384,14 @@ class CalculatorAmountCard extends StatelessWidget {
   final double amount;
   final double serviceFee;
   final double total;
+  final double fee;
 
   const CalculatorAmountCard({
     super.key,
     required this.amount,
     required this.serviceFee,
     required this.total,
+    required this.fee,
   });
 
   @override
@@ -393,23 +412,31 @@ class CalculatorAmountCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            AmountSection(
-              label: 'Tutar',
-              value: amount,
-              currency: '₺',
-            ),
-            const Divider(color: AppStyles.dividerColor),
-            AmountSection(
-              label: 'Hizmet Bedeli',
-              value: serviceFee,
-              currency: '₺',
-            ),
-            const Divider(color: AppStyles.dividerColor),
-            AmountSection(
-              label: 'TOPLAM',
-              value: total,
-              currency: '₺',
-              isTotal: true,
+            if (Session.instance.softposRates?.softRate1 != null && Session.instance.softposRates?.softRate1 != 0)
+              Column(
+                children: [
+                  AmountSection(
+                    label: 'Tutar',
+                    value: amount,
+                    currency: '₺',
+                  ),
+                  const Divider(color: AppStyles.dividerColor),
+                  AmountSection(
+                    label: 'Hizmet Bedeli',
+                    value: serviceFee,
+                    currency: '₺',
+                  ),
+                  const Divider(color: AppStyles.dividerColor),
+                ],
+              ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: (fee != 0) ? 0 : 10),
+              child: AmountSection(
+                label: 'TOPLAM',
+                value: total,
+                currency: '₺',
+                isTotal: true,
+              ),
             ),
           ],
         ),

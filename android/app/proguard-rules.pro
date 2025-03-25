@@ -7,7 +7,7 @@
 -keep class io.flutter.plugins.** { *;}
 
 # Keep your MainActivity class to ensure method channels work in release mode
--keep class com.hstpos.app.MainActivity {
+-keep class com.hstsoftpos.app.MainActivity {
     *;
 }
 
@@ -22,7 +22,7 @@
 }
 
 # Keep any Printer-related classes and methods to ensure printing works correctly
--keep class com.hstpos.printer.** { *; }
+-keep class com.hstsoftpos.printer.** { *; }
 
 # If you have any third-party SDKs for printers, add rules to prevent them from being obfuscated.
 # Example:

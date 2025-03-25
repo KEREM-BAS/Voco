@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:voco/providers/auth_provider.dart';
-import 'package:voco/utils/session.dart';
-import '../../../utils/softpos_alertbox/softpos_alertbox_enums.dart';
-import '../../../utils/softpos_alertbox/softpos_alertbox_functions.dart';
-import 'package:url_launcher/url_launcher.dart';
+// import 'package:voco/providers/auth_provider.dart';
+// import 'package:voco/utils/session.dart';
+// import '../../../utils/softpos_alertbox/softpos_alertbox_enums.dart';
+// import '../../../utils/softpos_alertbox/softpos_alertbox_functions.dart';
+// import 'package:url_launcher/url_launcher.dart';
 
 Future<bool> checkSoftPosApp({String? packageName, required BuildContext context}) async {
   return true;

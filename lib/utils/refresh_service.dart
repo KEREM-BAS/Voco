@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:voco/models/softpos_rates.dart';
 import '../models/merchant.dart';
 import '../models/terminal.dart';
 import '../models/user.dart';
@@ -55,6 +56,9 @@ class RefreshService {
 
           Session.instance.terminalTodayTotal = terminalDailyTotal;
         }
+
+        SoftposRates? softposRates = await Provider.of<AuthProvider>(context, listen: false).getSoftposRates(context);
+        Session.instance.softposRates = softposRates;
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:voco/utils/session.dart';
 
 import '../utils/map_util.dart';
 
@@ -81,6 +82,7 @@ class PaymentTransaction {
       'terminalUserName': terminalUserName,
       'currencyCode': currencyCode,
       'currency': currency,
+      "title": Session.instance.merchant?.companyName,
     };
   }
 }

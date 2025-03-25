@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hstpos.app">
+    package="com.hstsoftpos.app">
 
     <application
-        android:label="HSTPos"
+        android:label="HSTSoftPOS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

@@ -16,6 +16,7 @@ class SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var rates = Session.instance.softposRates;
     return Scaffold(
       appBar: AppBar(
         title: const Image(
@@ -32,19 +33,25 @@ class SettingsView extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           _settingsSectionTitle('Terminal Bilgileri'),
-          _settingsItem('Terminal Adı', terminal.terminalName ?? '-'),
-          _settingsItem('Terminal Kodu', terminal.terminalCode ?? '-'),
-          _settingsItem('Durum', terminal.terminalStatus ?? '-'),
+          _settingsCard('Terminal Adı', terminal.terminalName ?? '-'),
+          _settingsCard('Terminal Kodu', terminal.terminalCode ?? '-'),
+          _settingsCard('Durum', terminal.terminalStatus ?? '-'),
+          if (Session.instance.softposRates?.softRate1 != null) ...[
+            const Divider(),
+            _settingsSectionTitle('Oranlarım'),
+            _settingsCard('0 - ${rates?.paymentRange1.ceil()} arası', "${rates?.softRate1.toString()}%"),
+            _settingsCard('${rates?.paymentRange1.ceil()} üzeri', "${rates?.softRate2.toString()}%"),
+          ],
           const Divider(),
           _settingsSectionTitle('Firma Bilgileri'),
-          _settingsItem('Firma Adı', merchant.companyName ?? '-'),
-          _settingsItem('İletişim Telefonu', merchant.contactPhone ?? '-'),
-          _settingsItem('İletişim E-posta', merchant.contactMail ?? '-'),
-          _settingsItem('Adres', merchant.address ?? '-'),
+          _settingsCard('Firma Adı', merchant.companyName ?? '-'),
+          _settingsCard('İletişim Telefonu', merchant.contactPhone ?? '-'),
+          _settingsCard('İletişim E-posta', merchant.contactMail ?? '-'),
+          _settingsCard('Adres', merchant.address ?? '-'),
           const Divider(),
           _settingsSectionTitle('Kullanıcı Ayarları'),
-          _settingsItem('Kullanıcı Adı', terminal.userName ?? '-'),
-          _settingsItem('Otomatik Batch Durumu', terminal.isOtoBatch ? 'Açık' : 'Kapalı'),
+          _settingsCard('Kullanıcı Adı', terminal.userName ?? '-'),
+          _settingsCard('Otomatik Batch Durumu', terminal.isOtoBatch ? 'Açık' : 'Kapalı'),
           const SizedBox(height: 20),
           _logoutButton(context),
         ],
@@ -66,29 +73,38 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  Widget _settingsItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black54,
+  Widget _settingsCard(String label, String value) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                overflow: TextOverflow.ellipsis,
+              ),
+              maxLines: 1,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voco/utils/form_util.dart';
 
 import '../../../utils/routes.dart';
 import '../../../utils/session.dart';
@@ -33,4 +37,47 @@ Future<bool> homeLogoutDialog(BuildContext context) {
       );
     },
   ).then((value) => value ?? false);
+}
+
+Future<bool> onBackPressed(BuildContext context) async {
+  return await showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Dikkat'),
+          titleTextStyle: const TextStyle(color: Colors.grey, fontSize: 24),
+          content: const Text(
+            'Uygulamadan çıkmak istediğinize emin misiniz?',
+            style: TextStyle(color: Colors.black, fontSize: 16),
+          ),
+          actions: <Widget>[
+            FormUtil.elevatedButton(
+              () => Navigator.of(context).pop(false),
+              false,
+              "İptal",
+              100,
+              10,
+              buttonColor: Colors.grey,
+              fontSize: 16,
+              height: 40,
+            ),
+            const SizedBox(height: 16),
+            FormUtil.elevatedButton(
+              () {
+                if (Platform.isAndroid) {
+                  SystemNavigator.pop();
+                } else if (Platform.isIOS) {
+                  exit(0);
+                }
+              },
+              false,
+              "Çıkış",
+              100,
+              10,
+              fontSize: 16,
+              height: 40,
+            ),
+          ],
+        ),
+      ) ??
+      false;
 }

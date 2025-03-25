@@ -1,4 +1,4 @@
-package com.hstpos.app
+package com.hstsoftpos.app
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -17,24 +17,46 @@ class ReceiptPrinter(private val context: Context) {
     fun createReceipt(paymentData: Map<String, Any>): Bitmap? {
         // Initialize receipt content
         val contentList = mutableListOf<PrintContentBean>()
+        var additionalHeight = 0
 
-        // Add store name as a header
-        val companyHeader = PrintContentBean().apply {
-            content = "HST MOBİL AŞ"
-            fontSize = PrintFormat.FONT_LARGE
-            align = PrintFormat.ALIGN_CENTER
-            isBold = true
+        fun splitTextIntoWordChunks(text: String, chunkSize: Int): List<String> {
+            val words = text.split(" ")
+            val chunks = mutableListOf<String>()
+            var currentLine = StringBuilder()
+
+            for (word in words) {
+                // Check if adding the word would exceed the chunk size
+                if (currentLine.length + word.length + 1 > chunkSize) {
+                    // If the word would be split, make the current line uppercase and add it to the list
+                    chunks.add(currentLine.toString().trim().uppercase())
+                    currentLine = StringBuilder()
+                }
+                // Append the word to the current line
+                currentLine.append("$word ")
+            }
+
+            // Add the remaining text to the list, and make it uppercase if the last word is split
+            if (currentLine.isNotEmpty()) {
+                chunks.add(currentLine.toString().trim().uppercase())
+            }
+
+            return chunks
         }
-        contentList.add(companyHeader)
 
-        // Add store name as a sub-header
-        //val title = PrintContentBean().apply {
-        //    content = paymentData["companyName"]?.toString() ?: "HST Mobil"
-        //    fontSize = PrintFormat.FONT_LARGE
-        //    align = PrintFormat.ALIGN_CENTER
-        //    isBold = true
-        //}
-        //contentList.add(title)
+        // Add store name as a header and split it into 35-character chunks, ensuring words are not cut off
+        val titleText = paymentData["title"]?.toString() ?: "HST MOBİL AŞ"
+        val titleChunks = splitTextIntoWordChunks(titleText, 35)
+
+        for (chunk in titleChunks) {
+            val companyHeader = PrintContentBean().apply {
+                content = chunk
+                fontSize = PrintFormat.FONT_NORMAL // You can adjust the size if needed
+                align = PrintFormat.ALIGN_CENTER
+                isBold = true
+            }
+            contentList.add(companyHeader)
+            additionalHeight += 30
+        }
 
         // Add separator line
         addSeparator(contentList)
@@ -133,6 +155,7 @@ class ReceiptPrinter(private val context: Context) {
         }
         contentList.add(footer)
         addSeparator(contentList)
+
         // Add fiscal validity warning for POS receipt
         val fiscalWarning = PrintContentBean().apply {
             content = "Bu fiş yalnızca bilgilendirme amaçlıdır,"
@@ -141,6 +164,7 @@ class ReceiptPrinter(private val context: Context) {
             isBold = true
         }
         contentList.add(fiscalWarning)
+
         val fiscalWarning2 = PrintContentBean().apply {
             content = "mali bir belge niteliği taşımaz."
             fontSize = PrintFormat.FONT_SMALL
@@ -148,10 +172,12 @@ class ReceiptPrinter(private val context: Context) {
             isBold = true
         }
         contentList.add(fiscalWarning2)
+
         // Add separator line
         addSeparator(contentList)
-        // Generate the receipt as a Bitmap
-        return drawPrintBitmap(contentList, 700)
+
+        // Generate the receipt as a Bitmap with the adjusted height
+        return drawPrintBitmap(contentList, 700 + additionalHeight)
     }
 
     private fun addSeparator(contentList: MutableList<PrintContentBean>) {

@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.hstpos.app"
+        applicationId "com.hstsoftpos.app"
         minSdkVersion 21
         targetSdkVersion 34  // Updated target SDK version
         versionCode flutterVersionCode.toInteger()

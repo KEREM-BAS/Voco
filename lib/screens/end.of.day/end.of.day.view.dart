@@ -1,29 +1,34 @@
+import 'dart:developer';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:voco/providers/auth_provider.dart';
+import '../../enums/snack_type.dart';
 import '../../models/payment_transaction.dart';
 import '../../models/requests/transaction_report_request.dart';
 import '../../utils/constants.dart';
 import '../../utils/main_util.dart';
 import '../../utils/session.dart';
+import '../../utils/softpos_alertbox/softpos_alertbox_enums.dart';
+import '../../utils/softpos_alertbox/softpos_alertbox_functions.dart';
 import '../home/components/home.appbar.dart';
-import 'transaction.detail.dart';
 
-class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+class EndOfDayView extends StatefulWidget {
+  const EndOfDayView({super.key});
 
   @override
-  State<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<EndOfDayView> createState() => _EndOfDayViewState();
 }
 
-class _TransactionsScreenState extends State<TransactionsScreen> {
+class _EndOfDayViewState extends State<EndOfDayView> {
   final GlobalKey<ScaffoldState> _mainScaffold = GlobalKey<ScaffoldState>();
+  List<PaymentTransaction> transactionList = [];
   Map<String, List<PaymentTransaction>> transactionsMap = {};
 
   bool loading = true;
-  DateTime? startDate;
-  DateTime? endDate;
+  DateTime? selectedDate;
   int? transactionStatus;
 
   @override
@@ -42,9 +47,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           children: [
             HstAppBar(
               title: const Text(
-                'İşlemler',
+                'Gün Sonu Raporu',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 25,
                   fontWeight: FontWeight.bold,
                   color: Constants.SECONDARY,
                   decoration: TextDecoration.none,
@@ -53,6 +58,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
               centerTitle: true,
               leftAction: MainUtil.backAction(context),
+              rightAction: transactionList.isNotEmpty
+                  ? IconButton(
+                      onPressed: () {},
+                      icon: const Icon(
+                        Icons.print,
+                        color: Constants.SECONDARY,
+                      ),
+                    )
+                  : null,
             ),
             _filterSection(),
             Expanded(child: _body()),
@@ -64,7 +78,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _filterSection() {
     return Padding(
-      padding: const EdgeInsets.all(14.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 5,
@@ -77,15 +91,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   Expanded(
                     child: InkWell(
                       onTap: () async {
-                        DateTimeRange? picked = await showDateRangePicker(
+                        DateTime? picked = await showDatePicker(
                           context: context,
+                          initialDate: DateTime.now(),
                           firstDate: DateTime(2020),
                           lastDate: DateTime.now(),
                         );
                         if (picked != null) {
                           setState(() {
-                            startDate = picked.start;
-                            endDate = picked.end;
+                            selectedDate = picked;
                           });
                         }
                       },
@@ -101,9 +115,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             Icon(Icons.date_range, color: Colors.grey.shade600),
                             const SizedBox(width: 10),
                             Text(
-                              startDate != null && endDate != null
-                                  ? '${DateFormat('dd/MM/yy').format(startDate!)} - ${DateFormat('dd/MM/yy').format(endDate!)}'
-                                  : 'Tarih Aralığı Seç',
+                              selectedDate != null ? DateFormat('dd/MM/yy').format(selectedDate!) : 'Tarih Seç',
                               style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
                             ),
                           ],
@@ -185,7 +197,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           )
         : ListView.builder(
             shrinkWrap: true,
-            physics: const AlwaysScrollableScrollPhysics(), // Allow pull-to-refresh
+            physics: const AlwaysScrollableScrollPhysics(),
             itemCount: transactionsMap.keys.length,
             itemBuilder: (context, index) {
               String key = transactionsMap.keys.elementAt(index);
@@ -228,7 +240,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _transactionLine(PaymentTransaction tran) {
     return ListTile(
-      onTap: () => showTransactionDetailModal(context, tran),
+      onTap: () {},
       visualDensity: VisualDensity.compact,
       leading: Container(
         width: 50,
@@ -334,16 +346,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       currencyCode: 0,
       pageCount: 1000,
       pageNumber: 1,
-      startDate: startDate != null
-          ? DateFormat('yyyy-MM-ddTHH:mm:ss').format(startDate!.toUtc().add(const Duration(hours: 3)))
-          : DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 7)).toUtc()),
-      endDate: endDate != null
-          ? DateFormat('yyyy-MM-ddTHH:mm:ss').format(endDate!
-              .toUtc()
-              .add(const Duration(hours: 23, minutes: 59, seconds: 59))
-              .add(const Duration(hours: 3))
-              .subtract(const Duration(days: 1)))
-          : DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc()),
+      startDate:
+          selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!.toUtc()) : DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc()),
+      endDate: selectedDate != null
+          ? DateFormat('yyyy-MM-dd')
+              .format(selectedDate!.toUtc().add(const Duration(hours: 23, minutes: 59, seconds: 59)).subtract(const Duration(days: 1)))
+          : DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(days: 1))),
     );
 
     List<PaymentTransaction>? transactions =
@@ -352,6 +360,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       loading = false;
       if (transactions != null) {
         generateTransactionMap(transactions);
+        transactionList = transactions;
       }
     });
   }
@@ -377,5 +386,26 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String getKey(DateTime date) {
     List<String> months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     return '${date.day} ${months[date.month - 1]} - ${date.year}';
+  }
+
+  Future<void> printEndOfDay(BuildContext context) async {
+    try {
+      int? printerStatus = await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod<int?>('getPrinterStatus');
+      if (printerStatus == 240) {
+        await QuickAlert.show(
+          title: "Hata",
+          context: context,
+          type: QuickAlertType.error,
+          text: "Fiş basılamadı. Ruloyu kontrol edin.",
+          confirmBtnText: "Tamam",
+        );
+        return;
+      }
+      List<Map<String, dynamic>> transactionListJson = transactionList.map((e) => e.toJson()).toList();
+      await const MethodChannel('com.hstsoftpos.app/channel').invokeMethod('printEndOfDaySlip', transactionListJson);
+    } catch (e) {
+      log(e.toString());
+      MainUtil.showSnack(context, 'Bir hata oluştu. Lütfen tekrar deneyin.', SnackType.ERROR);
+    }
   }
 }
